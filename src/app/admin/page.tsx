@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentMembership } from "@/lib/admin-auth";
@@ -35,29 +36,39 @@ export default async function AdminDashboard() {
           </h1>
           <p className="mt-1 text-sm text-zinc-500">Events</p>
         </div>
-        <button
-          type="button"
-          disabled
-          title="Event CRUD lands next"
-          className="inline-flex h-9 cursor-not-allowed items-center rounded-md border border-zinc-300 px-3 text-sm text-zinc-400 dark:border-zinc-700"
+        <Link
+          href="/admin/events/new"
+          className="inline-flex h-9 items-center rounded-md bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           + New event
-        </button>
+        </Link>
       </div>
 
       <div className="mt-8">
         {list.length === 0 ? (
           <div className="rounded-md border border-dashed border-zinc-300 px-6 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
-            No events yet. Event CRUD lands next.
+            No events yet.{" "}
+            <Link
+              href="/admin/events/new"
+              className="font-medium text-zinc-900 underline dark:text-zinc-50"
+            >
+              Create your first event
+            </Link>
+            .
           </div>
         ) : (
           <ul className="divide-y divide-zinc-200 overflow-hidden rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">
             {list.map((e) => (
-              <li key={e.id} className="px-4 py-3">
-                <div className="font-medium">{e.name}</div>
-                <div className="text-sm text-zinc-500">
-                  {e.starts_on} – {e.ends_on} · {e.status}
-                </div>
+              <li key={e.id}>
+                <Link
+                  href={`/admin/events/${e.slug}`}
+                  className="block px-4 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                >
+                  <div className="font-medium">{e.name}</div>
+                  <div className="text-sm text-zinc-500">
+                    {e.starts_on} – {e.ends_on} · {e.status}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

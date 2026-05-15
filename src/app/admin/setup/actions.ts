@@ -3,18 +3,10 @@
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/admin-auth";
+import { findAvailableSlug, slugify } from "@/lib/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type SetupState = { error?: string };
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
 
 export async function createOrganization(
   _prev: SetupState,
@@ -28,18 +20,7 @@ export async function createOrganization(
   }
 
   const admin = createAdminClient();
-  const baseSlug = slugify(name) || "org";
-
-  let slug = baseSlug;
-  for (let i = 2; i < 100; i++) {
-    const { data } = await admin
-      .from("organizations")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-    if (!data) break;
-    slug = `${baseSlug}-${i}`;
-  }
+  const slug = await findAvailableSlug(admin, "organizations", slugify(name));
 
   const { data: org, error: orgError } = await admin
     .from("organizations")
