@@ -5,12 +5,28 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createSessionClient } from "@/lib/supabase/server";
 
+// Dev-only bypass: when ZIPPLAN_DEV_AUTH_BYPASS=1 (and we're not in
+// production), requireUser() returns a synthetic user and
+// getCurrentMembership() auto-creates / returns a "Dev Org". Lets us build
+// admin pages without a real session. Gated on NODE_ENV so the toggle can
+// never accidentally take effect on a production deploy.
+const DEV_BYPASS_AUTH =
+  process.env.NODE_ENV !== "production" &&
+  process.env.ZIPPLAN_DEV_AUTH_BYPASS === "1";
+
+const DEV_USER = {
+  id: "00000000-0000-0000-0000-000000000000",
+  email: "dev@local",
+};
+
 export type CurrentMembership = {
   organization_id: string;
   organization: { id: string; name: string; slug: string };
 };
 
 export async function requireUser() {
+  if (DEV_BYPASS_AUTH) return DEV_USER;
+
   const supabase = await createSessionClient();
   const {
     data: { user },
@@ -20,6 +36,30 @@ export async function requireUser() {
 }
 
 export async function getCurrentMembership(): Promise<CurrentMembership | null> {
+  if (DEV_BYPASS_AUTH) {
+    const admin = createAdminClient();
+
+    const existing = await admin
+      .from("organizations")
+      .select("id, name, slug")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    let org = existing.data;
+    if (!org) {
+      const inserted = await admin
+        .from("organizations")
+        .insert({ name: "Dev Org", slug: "dev-org" })
+        .select("id, name, slug")
+        .single();
+      if (inserted.error || !inserted.data) return null;
+      org = inserted.data;
+    }
+
+    return { organization_id: org.id, organization: org };
+  }
+
   const supabase = await createSessionClient();
   const {
     data: { user },
