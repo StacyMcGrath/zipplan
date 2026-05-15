@@ -22,7 +22,7 @@ export default async function LoginPage({
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Sign in to Zipplan
+            Sign in to ZipPlan
           </h1>
           <p className="text-sm text-zinc-500">
             We&rsquo;ll email you a link to sign in.

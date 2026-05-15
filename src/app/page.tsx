@@ -6,7 +6,7 @@ export default function Home() {
       <div className="w-full max-w-xl space-y-8 text-center">
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            Zipplan
+            ZipPlan
           </h1>
           <p className="text-lg text-zinc-600 dark:text-zinc-400">
             Event planning and resource management.

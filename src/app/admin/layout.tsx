@@ -16,7 +16,7 @@ export default async function AdminLayout({
           href="/admin"
           className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          Zipplan Admin
+          ZipPlan Admin
         </Link>
         <div className="flex items-center gap-3 text-sm text-zinc-500">
           <span className="hidden sm:inline">{user.email}</span>

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zipplan",
+  title: "ZipPlan",
   description: "Event planning and resource management",
 };
 

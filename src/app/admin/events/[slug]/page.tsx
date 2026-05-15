@@ -15,22 +15,38 @@ function formatDateRange(starts: string, ends: string): string {
   const start = new Date(`${starts}T00:00:00`);
   const end = new Date(`${ends}T00:00:00`);
   const sameYear = start.getFullYear() === end.getFullYear();
-  const sameMonth =
-    sameYear && start.getMonth() === end.getMonth();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+  const sameDay = sameMonth && start.getDate() === end.getDate();
 
-  const startFmt = new Intl.DateTimeFormat("en-US", {
+  const fullFmt = new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-    year: sameYear ? undefined : "numeric",
-  }).format(start);
-
-  const endFmt = new Intl.DateTimeFormat("en-US", {
-    month: sameMonth ? undefined : "short",
-    day: "numeric",
     year: "numeric",
-  }).format(end);
+  });
 
-  return starts === ends ? startFmt : `${startFmt} – ${endFmt}`;
+  if (sameDay) {
+    return fullFmt.format(start);
+  }
+
+  if (sameMonth) {
+    // "Jul 22–26, 2026"
+    const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(
+      start,
+    );
+    return `${month} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
+  }
+
+  if (sameYear) {
+    // "Dec 30 – Jan 2, 2026" (same year, different month)
+    const startFmt = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(start);
+    return `${startFmt} – ${fullFmt.format(end)}`;
+  }
+
+  // Different years: "Dec 30, 2025 – Jan 2, 2026"
+  return `${fullFmt.format(start)} – ${fullFmt.format(end)}`;
 }
 
 export default async function EventDetailPage({

@@ -31,9 +31,18 @@ export default async function AdminDashboard() {
     <main className="mx-auto w-full max-w-5xl px-6 py-10">
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {membership.organization.name}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {membership.organization.name}
+            </h1>
+            <Link
+              href="/admin/organization"
+              title="Edit organization"
+              className="text-sm text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50"
+            >
+              Edit
+            </Link>
+          </div>
           <p className="mt-1 text-sm text-zinc-500">Events</p>
         </div>
         <Link
