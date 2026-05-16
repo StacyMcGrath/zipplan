@@ -115,3 +115,100 @@ export async function requireEventBySlug(slug: string): Promise<{
 
   return { event: data, membership };
 }
+
+export type AdminLocation = {
+  id: string;
+  event_id: string;
+  location_type_id: string;
+  name: string;
+  address: string | null;
+  geo: unknown;
+  attributes: Record<string, unknown>;
+  notes: string | null;
+};
+
+export type AdminLocationType = {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string | null;
+  color: string | null;
+  position: number;
+};
+
+export type AdminFieldDefinition = {
+  id: string;
+  location_type_id: string;
+  key: string;
+  label: string;
+  kind:
+    | "text"
+    | "multiline"
+    | "phone"
+    | "email"
+    | "url"
+    | "number"
+    | "date"
+    | "datetime"
+    | "what3words"
+    | "select"
+    | "multiselect";
+  required: boolean;
+  position: number;
+  help_text: string | null;
+  options: unknown;
+};
+
+// Fetch a location by id, scoped to a specific event (and via that, the
+// current org). notFound() if the location doesn't exist or belongs to a
+// different event/org. Returns the location plus its type and the type's
+// field definitions, since detail/edit views always need all three.
+export async function requireLocationById(
+  eventSlug: string,
+  locationId: string,
+): Promise<{
+  event: AdminEvent;
+  membership: CurrentMembership;
+  location: AdminLocation;
+  locationType: AdminLocationType;
+  fieldDefinitions: AdminFieldDefinition[];
+}> {
+  const { event, membership } = await requireEventBySlug(eventSlug);
+
+  const admin = createAdminClient();
+  const { data: location } = await admin
+    .from("locations")
+    .select(
+      "id, event_id, location_type_id, name, address, geo, attributes, notes",
+    )
+    .eq("event_id", event.id)
+    .eq("id", locationId)
+    .maybeSingle<AdminLocation>();
+
+  if (!location) notFound();
+
+  const { data: locationType } = await admin
+    .from("location_types")
+    .select("id, event_id, name, description, color, position")
+    .eq("id", location.location_type_id)
+    .maybeSingle<AdminLocationType>();
+
+  if (!locationType) notFound();
+
+  const { data: fieldDefinitions } = await admin
+    .from("field_definitions")
+    .select(
+      "id, location_type_id, key, label, kind, required, position, help_text, options",
+    )
+    .eq("location_type_id", locationType.id)
+    .order("position", { ascending: true })
+    .returns<AdminFieldDefinition[]>();
+
+  return {
+    event,
+    membership,
+    location,
+    locationType,
+    fieldDefinitions: fieldDefinitions ?? [],
+  };
+}

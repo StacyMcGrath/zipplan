@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { requireEventBySlug } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const STATUS_STYLES: Record<string, string> = {
   draft:
@@ -57,6 +58,12 @@ export default async function EventDetailPage({
   const { slug } = await params;
   const { event, membership } = await requireEventBySlug(slug);
 
+  const admin = createAdminClient();
+  const { count: locationsCount } = await admin
+    .from("locations")
+    .select("id", { head: true, count: "exact" })
+    .eq("event_id", event.id);
+
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10">
       <Link
@@ -94,11 +101,41 @@ export default async function EventDetailPage({
       </div>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <PlaceholderSection title="Locations" />
+        <ActiveSection
+          title="Locations"
+          subtitle={
+            locationsCount === null
+              ? "—"
+              : `${locationsCount} ${
+                  locationsCount === 1 ? "location" : "locations"
+                }`
+          }
+          href={`/admin/events/${event.slug}/locations`}
+        />
         <PlaceholderSection title="Volunteers" />
         <PlaceholderSection title="Resources" />
       </div>
     </main>
+  );
+}
+
+function ActiveSection({
+  title,
+  subtitle,
+  href,
+}: {
+  title: string;
+  subtitle: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-md border border-zinc-200 bg-white px-5 py-6 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+    >
+      <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+      <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>
+    </Link>
   );
 }
 
