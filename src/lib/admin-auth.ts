@@ -212,3 +212,83 @@ export async function requireLocationById(
     fieldDefinitions: fieldDefinitions ?? [],
   };
 }
+
+export type AdminShift = {
+  id: string;
+  location_id: string;
+  shift_role_id: string | null;
+  role_label: string | null;
+  starts_at: string;
+  ends_at: string;
+  capacity: number;
+  notes: string | null;
+  geo: unknown;
+};
+
+export type AdminShiftRole = {
+  id: string;
+  event_id: string;
+  name: string;
+  description: string | null;
+  instructions: string | null;
+};
+
+// Fetch a shift by id, scoped to the event (and via that, the org). Also
+// returns the shift's location, location type, and shift role so detail
+// pages don't need follow-up queries.
+export async function requireShiftById(
+  eventSlug: string,
+  shiftId: string,
+): Promise<{
+  event: AdminEvent;
+  membership: CurrentMembership;
+  shift: AdminShift;
+  location: AdminLocation;
+  locationType: AdminLocationType;
+  shiftRole: AdminShiftRole | null;
+}> {
+  const { event, membership } = await requireEventBySlug(eventSlug);
+
+  const admin = createAdminClient();
+  const { data: shift } = await admin
+    .from("shifts")
+    .select(
+      "id, location_id, shift_role_id, role_label, starts_at, ends_at, capacity, notes, geo",
+    )
+    .eq("id", shiftId)
+    .maybeSingle<AdminShift>();
+
+  if (!shift) notFound();
+
+  // Scope check: the shift's location must belong to this event
+  const { data: location } = await admin
+    .from("locations")
+    .select(
+      "id, event_id, location_type_id, name, address, geo, attributes, notes",
+    )
+    .eq("id", shift.location_id)
+    .eq("event_id", event.id)
+    .maybeSingle<AdminLocation>();
+
+  if (!location) notFound();
+
+  const { data: locationType } = await admin
+    .from("location_types")
+    .select("id, event_id, name, description, color, position")
+    .eq("id", location.location_type_id)
+    .maybeSingle<AdminLocationType>();
+
+  if (!locationType) notFound();
+
+  let shiftRole: AdminShiftRole | null = null;
+  if (shift.shift_role_id) {
+    const { data } = await admin
+      .from("shift_roles")
+      .select("id, event_id, name, description, instructions")
+      .eq("id", shift.shift_role_id)
+      .maybeSingle<AdminShiftRole>();
+    shiftRole = data ?? null;
+  }
+
+  return { event, membership, shift, location, locationType, shiftRole };
+}

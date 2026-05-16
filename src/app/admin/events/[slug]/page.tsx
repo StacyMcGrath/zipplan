@@ -64,6 +64,22 @@ export default async function EventDetailPage({
     .select("id", { head: true, count: "exact" })
     .eq("event_id", event.id);
 
+  // Shifts don't have an event_id directly — they belong to a location.
+  // Two-step count via the location ids in this event.
+  const { data: locationIdRows } = await admin
+    .from("locations")
+    .select("id")
+    .eq("event_id", event.id);
+  const locationIds = (locationIdRows ?? []).map((r) => r.id);
+
+  const { count: shiftsCount } =
+    locationIds.length === 0
+      ? { count: 0 }
+      : await admin
+          .from("shifts")
+          .select("id", { head: true, count: "exact" })
+          .in("location_id", locationIds);
+
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10">
       <Link
@@ -100,7 +116,7 @@ export default async function EventDetailPage({
         </Link>
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ActiveSection
           title="Locations"
           subtitle={
@@ -111,6 +127,15 @@ export default async function EventDetailPage({
                 }`
           }
           href={`/admin/events/${event.slug}/locations`}
+        />
+        <ActiveSection
+          title="Shifts"
+          subtitle={
+            shiftsCount === null
+              ? "—"
+              : `${shiftsCount} ${shiftsCount === 1 ? "shift" : "shifts"}`
+          }
+          href={`/admin/events/${event.slug}/shifts`}
         />
         <PlaceholderSection title="Volunteers" />
         <PlaceholderSection title="Resources" />

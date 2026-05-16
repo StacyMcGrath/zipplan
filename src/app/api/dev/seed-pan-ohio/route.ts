@@ -15,9 +15,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //   locations (per architecture memory).
 //
 // Re-run anytime; existing rows are detected by name + event and skipped.
-// Returns a JSON summary of what was inserted vs skipped.
+// Pass ?refresh=1 to also UPDATE the attributes JSONB on existing
+// locations from the TSV (useful after editing the source data).
+// Returns a JSON summary of what was inserted vs updated vs skipped.
 //
-// Usage: GET /api/dev/seed-pan-ohio  (or with ?event=other-slug)
+// Usage: GET /api/dev/seed-pan-ohio  (or with ?event=other-slug, ?refresh=1)
 
 type FieldKind =
   | "text"
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const eventSlug =
     url.searchParams.get("event") ?? "pan-ohio-hope-ride-2026";
+  const refresh = url.searchParams.get("refresh") === "1";
 
   const admin = createAdminClient();
 
@@ -160,6 +163,7 @@ export async function GET(request: NextRequest) {
 
   let locationsInserted = 0;
   let locationsSkipped = 0;
+  let locationsUpdated = 0;
   const errors: string[] = [];
 
   for (const line of lines.slice(1)) {
@@ -179,22 +183,38 @@ export async function GET(request: NextRequest) {
       ? "Rest Stop"
       : "Start/Finish Venue";
 
+    const attributes: Record<string, string> = {};
+    if (row.CITY) attributes.city = row.CITY;
+    if (row.ADDRESS) attributes.address = row.ADDRESS;
+    if (row.W3W) attributes.what3words = row.W3W;
+    if (row.SPONSORING_GROUP) attributes.sponsoring_group = row.SPONSORING_GROUP;
+
     const existing = await admin
       .from("locations")
       .select("id")
       .eq("event_id", event.id)
       .eq("name", name)
       .maybeSingle();
+
     if (existing.data) {
-      locationsSkipped++;
+      if (!refresh) {
+        locationsSkipped++;
+        continue;
+      }
+      const { error } = await admin
+        .from("locations")
+        .update({
+          location_type_id: typeIds[typeName],
+          attributes,
+        })
+        .eq("id", existing.data.id);
+      if (error) {
+        errors.push(`${name}: ${error.message}`);
+        continue;
+      }
+      locationsUpdated++;
       continue;
     }
-
-    const attributes: Record<string, string> = {};
-    if (row.CITY) attributes.city = row.CITY;
-    if (row.ADDRESS) attributes.address = row.ADDRESS;
-    if (row.W3W) attributes.what3words = row.W3W;
-    if (row.SPONSORING_GROUP) attributes.sponsoring_group = row.SPONSORING_GROUP;
 
     const { error } = await admin.from("locations").insert({
       event_id: event.id,
@@ -216,7 +236,9 @@ export async function GET(request: NextRequest) {
     location_types: LOCATION_TYPES.length,
     field_definitions_inserted: fieldsInserted,
     locations_inserted: locationsInserted,
+    locations_updated: locationsUpdated,
     locations_skipped: locationsSkipped,
+    refresh,
     errors,
   });
 }
