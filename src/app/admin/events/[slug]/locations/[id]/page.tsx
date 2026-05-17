@@ -32,14 +32,12 @@ export default async function LocationDetailPage({
             {locationType.name}
           </div>
         </div>
-        <button
-          type="button"
-          disabled
-          title="Edit form lands next session"
-          className="inline-flex h-9 cursor-not-allowed items-center rounded-md border border-zinc-300 px-3 text-sm text-zinc-400 dark:border-zinc-700"
+        <Link
+          href={`/admin/events/${event.slug}/locations/${location.id}/edit`}
+          className="inline-flex h-9 items-center rounded-md border border-zinc-300 px-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-900"
         >
           Edit
-        </button>
+        </Link>
       </div>
 
       <dl className="mt-8 divide-y divide-zinc-200 overflow-hidden rounded-md border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-950">

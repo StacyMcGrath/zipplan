@@ -114,3 +114,21 @@ export function formatLongDateInZone(iso: string, timezone: string): string {
     day: "numeric",
   }).format(new Date(iso));
 }
+
+// Format a UTC ISO timestamp into "HH:MM" 24-hour in a given IANA
+// timezone — the value shape that <input type="time"> expects.
+export function timeInputValueInZone(iso: string, timezone: string): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .formatToParts(new Date(iso))
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value]),
+  );
+  const hour = parts.hour === "24" ? "00" : parts.hour;
+  return `${hour}:${parts.minute}`;
+}

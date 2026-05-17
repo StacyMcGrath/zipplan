@@ -80,14 +80,12 @@ export default async function ShiftsListPage({
 
       <div className="mt-4 flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Shifts</h1>
-        <button
-          type="button"
-          disabled
-          title="Create form lands next session"
-          className="inline-flex h-9 cursor-not-allowed items-center rounded-md border border-zinc-300 px-3 text-sm text-zinc-400 dark:border-zinc-700"
+        <Link
+          href={`/admin/events/${event.slug}/shifts/new`}
+          className="inline-flex h-9 items-center rounded-md bg-zinc-900 px-3 text-sm font-medium text-zinc-50 transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           + New shift
-        </button>
+        </Link>
       </div>
 
       {list.length === 0 ? (
